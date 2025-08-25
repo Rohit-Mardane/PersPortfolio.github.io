@@ -284,38 +284,48 @@
     </footer>
 
     <!-- Scripts Section-->
-    <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
-    <script src="Rohit_script.js"></script>
-    <script>
-        const form = document.getElementById("contactForm");
-        form.addEventListener("submit", function (e) {
-            e.preventDefault();
-
-            fetch("https://script.google.com/macros/s/AKfycbxSBcXN41YWLS-7S66Am2cIWJiztRpvAVX5sBo5hm-2gfbPtT_VAAt36Zp2yaxvmeE/exec", {
-                method: "POST",
-                body: new FormData(form)
-            })
-            .then(response => {
-                alert("Message sent successfully!");
-                form.reset();
-            })
-            .catch(error => {
-                alert("There was an error sending your message.");
-                console.error("Error:", error);
-            });
-        });
-    </script>
-
 <script>
-document.getElementById("contactForm").addEventListener("submit", function (e) {
-    const emailInput = document.querySelector('input[name="email"]');
-    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailPattern.test(emailInput.value.trim())) {
-        alert("Please enter a valid email address.");
-        e.preventDefault(); // Stops form from submitting
+  const form = document.getElementById("contactForm");
+
+  function normalizeEmail(v) {
+    return (v || "")
+      .toString()
+      .normalize('NFKC')
+      .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '') // zero-width chars
+      .replace(/\s+/g, '')                          // remove spaces
+      .toLowerCase();
+  }
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const emailInput = form.querySelector('input[name="email"]');
+    const email = normalizeEmail(emailInput.value);
+
+    if (!email || !/@/.test(email)) {
+      alert("Please enter a valid email address.");
+      emailInput.focus();
+      return;
     }
-});
-</script>       
+
+    // write normalized value back so server receives a clean address
+    emailInput.value = email;
+
+    try {
+      const resp = await fetch("https://script.google.com/macros/s/AKfycbxSBcXN41YWLS-7S66Am2cIWJiztRpvAVX5sBo5hm-2gfbPtT_VAAt36Zp2yaxvmeE/exec", {
+        method: "POST",
+        body: new FormData(form) // sends fields: name, email, phone, subject, message
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      alert("Message sent successfully!");
+      form.reset();
+    } catch (err) {
+      console.error(err);
+      alert("There was an error sending your message.");
+    }
+  });
+</script>
+     
 
 </body>
 
